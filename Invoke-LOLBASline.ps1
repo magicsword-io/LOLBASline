@@ -26,7 +26,6 @@ param (
     [switch]$Verbose
 )
 
-# Import required module
 Import-Module powershell-yaml -ErrorAction Stop
 
 function Clone-LOLBASRepo {
@@ -61,7 +60,7 @@ function Load-YAMLFiles {
     return $YamlObjects
 }
 
-function Check-And-Execute-Binaries {
+function Check-Binaries {
     param (
         [System.Collections.ArrayList]$YamlData,
         [switch]$Verbose
@@ -72,24 +71,32 @@ function Check-And-Execute-Binaries {
     foreach ($Data in $YamlData) {
         if ($Data.Commands) {
             foreach ($CommandInfo in $Data.Commands) {
+                $ExecutablePath = $Data.Full_Path[0].Path
+                $Presence = if (Test-Path $ExecutablePath) { "Yes" } else { "No" }
                 $ExecutableCommand = $CommandInfo.Command
-                try {
-                    $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $ExecutableCommand" -PassThru -WindowStyle Hidden
-                    Start-Sleep -Seconds 2 # Give the command a moment to execute; adjust as needed
-                    if ($process.HasExited -eq $false) {
-                        $process.Kill()
-                        $executionResult = "Executed"
-                    } else {
-                        $executionResult = "Failed"
+                $executionResult = "Not Executed"
+                
+                if ($Presence -eq "Yes") {
+                    try {
+                        $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $ExecutableCommand" -PassThru -WindowStyle Hidden
+                        Start-Sleep -Seconds 2 # Give the command a moment to execute; adjust as needed
+                        if ($process.HasExited -eq $false) {
+                            $process.Kill()
+                            $executionResult = "Executed"
+                        } else {
+                            $executionResult = "Failed"
+                        }
+                    } catch {
+                        $executionResult = "Error"
                     }
-                } catch {
-                    $executionResult = "Error"
                 }
 
                 $Result = [PSCustomObject]@{
                     Name            = $Data.Name
-                    Command         = $ExecutableCommand
+                    Path            = $ExecutablePath
+                    Presence        = $Presence
                     ExecutionResult = $executionResult
+                    Command         = $ExecutableCommand
                     Description     = $CommandInfo.Description
                     Usecase         = $CommandInfo.Usecase
                     Category        = $CommandInfo.Category
@@ -103,7 +110,7 @@ function Check-And-Execute-Binaries {
                         "Failed"   { "Red" }
                         Default    { "Yellow" }
                     }
-                    Write-Host "$($Data.Name): Command execution result = $($executionResult)" -ForegroundColor $color
+                    Write-Host "$($Data.Name): Presence = $($Presence), Execution result = $($executionResult)" -ForegroundColor $color
                 }
             }
         }
@@ -117,6 +124,7 @@ if (-not $Path) {
 }
 
 $YamlData = Load-YAMLFiles -DirectoryPath $Path
-$Results = Check-And-Execute-Binaries -YamlData $YamlData -Verbose:$Verbose
+$Results = Check-Binaries -YamlData $YamlData -Verbose:$Verbose
 $Results | Export-Csv -Path $Output -NoTypeInformation
 Write-Host "Results written to $Output"
+
