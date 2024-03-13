@@ -20,6 +20,29 @@ GitHub:         https://github.com/magicsword-io/LOLBASline
 LOLBAS Project - https://github.com/LOLBAS-Project/LOLBAS
 #>
 
+<#
+.SYNOPSIS
+LOLBASline - A PowerShell tool for checking the presence and execution status of Living Off The Land Binaries and Scripts (LOLBAS).
+
+.DESCRIPTION
+LOLBASline checks for the existence of specified binaries and attempts to execute commands from the LOLBAS project definitions. It provides insights into which LOLBAS items are present and executable on a Windows system. Use this tool in controlled environments to assess system exposure to threats that use LOLBAS.
+
+.AUTHOR
+Name: Jose E Hernandez
+Organization: MagicSword
+Email: jose@magicsword.io
+
+.NOTES
+Version:        1
+Last Updated:   03/11/2024
+License:        Apache 2.0
+GitHub:         https://github.com/magicsword-io/LOLBASline
+
+.LINK
+LOLBAS Project - https://github.com/LOLBAS-Project/LOLBAS
+#>
+
+
 param (
     [string]$Path = $null,
     [string]$Output = "results.csv",

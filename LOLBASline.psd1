@@ -12,7 +12,7 @@
 RootModule = 'LOLBASline.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.0'
+ModuleVersion = '1.0.1'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -24,7 +24,7 @@ GUID = 'f46a307c-097d-4993-bcb1-52b793fa142e'
 Author = 'Jose E Hernandez'
 
 # Company or vendor of this module
-CompanyName = 'Unknown'
+CompanyName = 'MagicSword'
 
 # Copyright statement for this module
 Copyright = '(c) Jose E Hernandez. All rights reserved.'
@@ -69,7 +69,7 @@ RequiredModules = @('powershell-yaml')
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = '*'
+FunctionsToExport = 'Invoke-LOLBASline'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'
