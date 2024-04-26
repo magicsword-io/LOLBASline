@@ -2,9 +2,7 @@
 
 LOLBASline is a PowerShell tool designed to assess the presence and execution capabilities of Living Off The Land Binaries and Scripts (LOLBAS) on Windows systems. It provides insights into which LOLBAS items are present on the system and tests their ability to execute specific commands.
 
-<video src="static/demo.mp4" autoplay loop muted>
-  Your browser does not support the video tag.
-</video>
+<img src="static/demo.gif" alt="Demo Animation" />
 
 ## Features 🌟
 
