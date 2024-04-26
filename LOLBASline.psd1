@@ -12,7 +12,7 @@
 RootModule = 'LOLBASline.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.1'
+ModuleVersion = '1.0.2'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -72,7 +72,7 @@ RequiredModules = @('powershell-yaml')
 FunctionsToExport = 'Invoke-LOLBASline'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = '*'
+CmdletsToExport = @()
 
 # Variables to export from this module
 VariablesToExport = '*'
@@ -107,8 +107,7 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        # ReleaseNotes = ''
-
+        ReleaseNotes = 'Added new features and fixed bugs.'
         # Prerelease string of this module
         # Prerelease = ''
 
