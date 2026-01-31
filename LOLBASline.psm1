@@ -28,23 +28,40 @@ GitHub:         https://github.com/magicsword-io/LOLBASline
 LOLBAS Project - https://github.com/LOLBAS-Project/LOLBAS
 #>
 
-# Set strict mode for best practices
-Set-StrictMode -Version Latest
-$ErrorActionPreference = "Stop"
-
 # ============================================================================
 # Configuration & Constants
 # ============================================================================
 
+# Initialize before strict mode to avoid uninitialized variable errors
+$script:LogFile = ""
+$script:Config = @{}
+
+# Get AppData path with proper fallbacks
+try {
+    $appDataPath = $env:LOCALAPPDATA
+    if (-not $appDataPath) {
+        $appDataPath = Join-Path $env:USERPROFILE "AppData\Local"
+    }
+    if (-not $appDataPath) {
+        $appDataPath = "."
+    }
+} catch {
+    $appDataPath = "."
+}
+
 $script:Config = @{
-    CachePath           = Join-Path $env:LOCALAPPDATA "LOLBASline\cache"
+    CachePath           = Join-Path $appDataPath "LOLBASline\cache"
     CacheName           = "lolbas_cache.json"
     CacheExpireDays     = 7
     MaxParallelJobs     = 4
     CommandTimeout      = 5
-    LogPath             = Join-Path $env:LOCALAPPDATA "LOLBASline\logs"
+    LogPath             = Join-Path $appDataPath "LOLBASline\logs"
     Version             = "2.0.0"
 }
+
+# Set strict mode AFTER config is initialized
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 
 # ============================================================================
 # Logging Functions
@@ -410,10 +427,7 @@ function Invoke-BinaryCheck {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
-        [object[]]$LOLBASData,
-        
-        [Parameter(Mandatory = $false)]
-        [switch]$Verbose
+        [object[]]$LOLBASData
     )
     
     $results = @()
@@ -464,7 +478,7 @@ function Invoke-BinaryCheck {
         $percent = [math]::Round(($processedCount / $totalBinaries) * 100)
         Write-Progress -Activity "Checking binaries" -Status "$processedCount/$totalBinaries" -PercentComplete $percent
         
-        if ($Verbose) {
+        if ($VerbosePreference -ne 'SilentlyContinue') {
             $statusColor = @{
                 "Yes"       = "Green"
                 "No"        = "Yellow"
@@ -516,9 +530,6 @@ function Invoke-LOLBASline {
         [string]$OutputPath = "LOLBASline_results.csv",
         
         [Parameter(Mandatory = $false)]
-        [switch]$Verbose,
-        
-        [Parameter(Mandatory = $false)]
         [switch]$ForceRefresh,
         
         [Parameter(Mandatory = $false)]
@@ -546,8 +557,8 @@ function Invoke-LOLBASline {
         
         Write-LogMessage "Loaded $($lolbasData.Count) LOLBAS items" -Level Success
         
-        # Check binaries
-        $results = Invoke-BinaryCheck -LOLBASData $lolbasData -Verbose:$Verbose
+        # Check binaries (Verbose handled through VerbosePreference)
+        $results = Invoke-BinaryCheck -LOLBASData $lolbasData
         
         # Export results
         Write-LogMessage "Exporting results to $OutputPath" -Level Info
@@ -573,7 +584,11 @@ function Invoke-LOLBASline {
 Export-ModuleMember -Function @(
     'Invoke-LOLBASline',
     'Initialize-Logging',
+    'Write-LogMessage',
     'Get-LOLBASData',
+    'Get-BuiltInLOLBASReference',
+    'ConvertFrom-SimpleYAML',
     'Test-BinaryPresence',
-    'Test-CommandExecution'
+    'Test-CommandExecution',
+    'Invoke-BinaryCheck'
 )
