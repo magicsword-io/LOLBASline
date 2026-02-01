@@ -1,0 +1,9 @@
+[2026-01-31 17:39:47] [Info] Test
+[2026-01-31 17:39:47] [Info] LOLBASline v2.0.0 - Epic Performance Edition
+[2026-01-31 17:39:47] [Info] Loading LOLBAS reference data...
+[2026-01-31 17:39:47] [Debug] No cache found
+[2026-01-31 17:39:47] [Info] Using built-in LOLBAS reference data
+[2026-01-31 17:39:47] [Info] Cache directory created at ./LOLBASline/cache
+[2026-01-31 17:39:47] [Success] Cache saved (3 entries)
+[2026-01-31 17:39:47] [Success] Loaded 3 LOLBAS items
+[2026-01-31 17:39:47] [Error] Error during execution: A parameter with the name 'Verbose' was defined multiple times for the command.

@@ -1,0 +1,11 @@
+[2026-01-31 17:40:20] [Info] LOLBASline v2.0.0 - Epic Performance Edition
+[2026-01-31 17:40:20] [Info] Loading LOLBAS reference data...
+[2026-01-31 17:40:20] [Success] Loaded cached LOLBAS data (3 entries)
+[2026-01-31 17:40:20] [Success] Loaded 3 LOLBAS items
+[2026-01-31 17:40:20] [Info] Starting binary presence and execution checks
+[2026-01-31 17:40:20] [Success] Completed checking 3 binaries
+[2026-01-31 17:40:20] [Info] Exporting results to LOLBASline_results.csv
+[2026-01-31 17:40:20] [Success] Analysis complete! Results saved to LOLBASline_results.csv
+[2026-01-31 17:40:20] [Info] Total binaries checked: 3
+[2026-01-31 17:40:20] [Info] Binaries present: 0
+[2026-01-31 17:40:20] [Info] Commands executed: 0

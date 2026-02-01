@@ -1,0 +1,38 @@
+[
+  {
+    "Path": "C:\\Windows\\System32\\cmd.exe",
+    "Commands": [
+      {
+        "Description": "Basic execution",
+        "Command": "cmd.exe /c echo test",
+        "UseCase": "Execution"
+      }
+    ],
+    "Description": "Windows Command Processor",
+    "Name": "cmd.exe"
+  },
+  {
+    "Path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+    "Commands": [
+      {
+        "Description": "Basic execution",
+        "Command": "powershell.exe -NoProfile -Command Write-Host test",
+        "UseCase": "Execution"
+      }
+    ],
+    "Description": "PowerShell scripting engine",
+    "Name": "powershell.exe"
+  },
+  {
+    "Path": "C:\\Windows\\System32\\wscript.exe",
+    "Commands": [
+      {
+        "Description": "Help",
+        "Command": "wscript.exe /?",
+        "UseCase": "Reconnaissance"
+      }
+    ],
+    "Description": "Windows Script Host",
+    "Name": "wscript.exe"
+  }
+]
