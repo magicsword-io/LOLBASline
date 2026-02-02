@@ -6,7 +6,7 @@ LOLBASline - A PowerShell tool for checking the presence and execution status of
 LOLBASline checks for the existence of specified binaries and attempts to execute commands from the LOLBAS project definitions. It provides insights into which LOLBAS items are present and executable on a Windows system. Use this tool in controlled environments to assess system exposure to threats that use LOLBAS.
 
 .PARAMETER Path
-Specifies the path to an existing LOLBAS repository YAML directory (yml/OSBinaries). If not provided, the module will clone the repository automatically.
+Specifies the path to an existing LOLBAS repository YAML directory (yml/OSBinaries). If not provided, the module will use the JSON API (no dependencies required).
 
 .PARAMETER Output
 Specifies the output file path for the CSV results. Default is "results.csv".
@@ -19,7 +19,7 @@ Displays help information about the command usage.
 
 .EXAMPLE
 Invoke-LOLBASline -Verbose
-Runs LOLBASline with verbose output, automatically cloning the LOLBAS repository if needed.
+Runs LOLBASline with verbose output, automatically fetching LOLBAS data from JSON API (no dependencies required).
 
 .EXAMPLE
 Invoke-LOLBASline -Path "C:\LOLBAS\yml\OSBinaries" -Output "scan_results.csv"
@@ -31,11 +31,12 @@ Organization: MagicSword
 Email: jose@magicsword.io
 
 .NOTES
-Version:        1.1.0
+Version:        1.2.0
 Last Updated:   02/02/2026
 License:        Apache 2.0
 GitHub:         https://github.com/magicsword-io/LOLBASline
 PowerShell:     Compatible with PowerShell 5.1+ and PowerShell Core 7.0+
+Dependencies:   None! Uses JSON API - no git or powershell-yaml required.
 
 .LINK
 LOLBAS Project - https://github.com/LOLBAS-Project/LOLBAS
@@ -61,7 +62,7 @@ function Invoke-LOLBASline {
     if ($Help) {
         Write-Host "Usage of Invoke-LOLBASline:" -ForegroundColor Cyan
         Write-Host "  -Path [string]: Specify the path to an existing LOLBAS YAML directory (yml/OSBinaries)." -ForegroundColor Gray
-        Write-Host "                  If not provided, the module will clone the repository automatically." -ForegroundColor Gray
+        Write-Host "                  If not provided, the module will use the JSON API (no dependencies)." -ForegroundColor Gray
         Write-Host "  -Output [string]: Specify the output file for results. Default is 'results.csv'." -ForegroundColor Gray
         Write-Host "  -Verbose: Enable verbose output." -ForegroundColor Gray
         Write-Host "  -Help: Display this help message." -ForegroundColor Gray
@@ -72,42 +73,42 @@ function Invoke-LOLBASline {
         return
     }
 
-    # Import powershell-yaml module with better error handling
-    try {
-        Import-Module powershell-yaml -ErrorAction Stop
-    }
-    catch {
-        Write-Error "Failed to import powershell-yaml module. Please install it using: Install-Module -Name powershell-yaml" -ErrorAction Stop
-        return
-    }
-
-    function Clone-LOLBASRepo {
+    function Download-LOLBASRepo {
         [CmdletBinding()]
         param (
             [Parameter(Mandatory = $true)]
             [string]$Destination
         )
 
-        # Check if git is available
-        $gitInstalled = Get-Command "git" -ErrorAction SilentlyContinue
-        if (-not $gitInstalled) {
-            Write-Warning "Git is not installed. Please install Git to use this module."
-            Write-Host "You can download Git from https://git-scm.com/downloads" -ForegroundColor Yellow
-            return $null
-        }
-
         if (-not (Test-Path $Destination)) {
-            $RepoURL = "https://github.com/LOLBAS-Project/LOLBAS.git"
-            Write-Host "Cloning LOLBAS project to $Destination..." -ForegroundColor Cyan
+            $ZipURL = "https://github.com/LOLBAS-Project/LOLBAS/archive/refs/heads/master.zip"
+            $ZipPath = Join-Path (Get-Location) "LOLBAS.zip"
+            $ExtractPath = Join-Path (Get-Location) "LOLBAS"
+            
+            Write-Host "Downloading LOLBAS repository as ZIP..." -ForegroundColor Cyan
             try {
-                git clone $RepoURL $Destination 2>&1 | Out-Null
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Error "Failed to clone LOLBAS repository. Git returned exit code $LASTEXITCODE."
-                    return $null
+                # Download the ZIP file
+                Invoke-WebRequest -Uri $ZipURL -OutFile $ZipPath -ErrorAction Stop
+                Write-Host "Extracting ZIP archive..." -ForegroundColor Cyan
+                
+                # Extract the ZIP file
+                Expand-Archive -LiteralPath $ZipPath -DestinationPath (Get-Location) -Force -ErrorAction Stop
+                
+                # Move extracted folder to destination
+                $ExtractedFolder = Join-Path (Get-Location) "LOLBAS-master"
+                if (Test-Path $ExtractedFolder) {
+                    Move-Item -Path $ExtractedFolder -Destination $Destination -Force -ErrorAction Stop
                 }
+                
+                # Clean up ZIP file
+                Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue
+                
+                Write-Host "Successfully downloaded and extracted LOLBAS repository." -ForegroundColor Green
             }
             catch {
-                Write-Error "Error cloning repository: $_"
+                Write-Error "Error downloading repository: $_"
+                # Clean up on error
+                if (Test-Path $ZipPath) { Remove-Item -Path $ZipPath -Force -ErrorAction SilentlyContinue }
                 return $null
             }
         }
@@ -124,56 +125,39 @@ function Invoke-LOLBASline {
         return $yamlPath
     }
 
-    function Load-YAMLFiles {
+    function Load-LOLBASJSON {
         [CmdletBinding()]
         param (
-            [Parameter(Mandatory = $true)]
-            [string]$DirectoryPath
+            [Parameter(Mandatory = $false)]
+            [string]$JsonURL = "https://lolbas-project.github.io/api/lolbas.json"
         )
 
-        if (-not (Test-Path $DirectoryPath)) {
-            Write-Error "Directory path does not exist: $DirectoryPath"
-            return @()
-        }
+        Write-Host "Fetching LOLBAS data from JSON API..." -ForegroundColor Cyan
+        try {
+            $response = Invoke-WebRequest -Uri $JsonURL -UseBasicParsing -ErrorAction Stop
+            $jsonContent = $response.Content
+            $LOLBASData = $jsonContent | ConvertFrom-Json -ErrorAction Stop
+            
+            if (-not $LOLBASData -or $LOLBASData.Count -eq 0) {
+                Write-Warning "No data received from JSON API"
+                return @()
+            }
 
-        $YamlFiles = Get-ChildItem -Path $DirectoryPath -Filter *.yml -Recurse -ErrorAction SilentlyContinue
-        if (-not $YamlFiles) {
-            Write-Warning "No YAML files found in directory: $DirectoryPath"
-            return @()
-        }
-
-        $YamlObjects = [System.Collections.ArrayList]::new()
-        $errorCount = 0
-
-        foreach ($File in $YamlFiles) {
-            try {
-                $YamlContent = Get-Content $File.FullName -Raw -ErrorAction Stop
-                if ([string]::IsNullOrWhiteSpace($YamlContent)) {
-                    if ($Verbose) {
-                        Write-Warning "Skipping empty YAML file: $($File.FullName)"
-                    }
-                    continue
-                }
-                
-                $YamlObject = ConvertFrom-Yaml $YamlContent -ErrorAction Stop
-                if ($YamlObject) {
-                    [void]$YamlObjects.Add($YamlObject)
+            # Filter to only OSBinaries (items with Full_Path)
+            $OSBinaries = [System.Collections.ArrayList]::new()
+            foreach ($Item in $LOLBASData) {
+                if ($Item.Full_Path -and $Item.Full_Path.Count -gt 0) {
+                    [void]$OSBinaries.Add($Item)
                 }
             }
-            catch {
-                $errorCount++
-                if ($Verbose) {
-                    Write-Warning "Failed to parse YAML file '$($File.FullName)': $_"
-                }
-            }
-        }
 
-        if ($errorCount -gt 0) {
-            Write-Warning "Failed to parse $errorCount YAML file(s). Continuing with successfully parsed files."
+            Write-Host "Loaded $($OSBinaries.Count) LOLBAS binaries from JSON API" -ForegroundColor Green
+            return $OSBinaries
         }
-
-        Write-Host "Loaded $($YamlObjects.Count) YAML files from $DirectoryPath" -ForegroundColor Green
-        return $YamlObjects
+        catch {
+            Write-Error "Failed to load LOLBAS data from JSON API: $_"
+            return @()
+        }
     }
 
     function Check-Binaries {
@@ -325,37 +309,21 @@ function Invoke-LOLBASline {
     }
 
     # Main execution logic
-    $yamlDirectoryPath = $null
-
-    # Use provided Path if specified, otherwise clone repository
+    # Always use JSON API - no git or powershell-yaml dependencies required!
     if ($Path) {
-        if (Test-Path $Path) {
-            $yamlDirectoryPath = $Path
-            Write-Host "Using provided path: $Path" -ForegroundColor Cyan
-        }
-        else {
-            Write-Error "The specified path does not exist: $Path"
-            return
-        }
+        Write-Warning "The -Path parameter is deprecated. Using JSON API instead (no dependencies required)."
+        Write-Host "Fetching LOLBAS data from JSON API..." -ForegroundColor Cyan
     }
-    else {
-        $defaultRepoPath = Join-Path (Get-Location) "lolbas_repo"
-        $yamlDirectoryPath = Clone-LOLBASRepo -Destination $defaultRepoPath
-        if (-not $yamlDirectoryPath) {
-            Write-Error "Unable to continue without a valid LOLBAS repository path. Exiting."
-            return
-        }
-    }
+    
+    $LOLBASData = Load-LOLBASJSON
 
-    # Load YAML files
-    $YamlData = Load-YAMLFiles -DirectoryPath $yamlDirectoryPath
-    if ($YamlData.Count -eq 0) {
-        Write-Error "No YAML data loaded. Cannot proceed."
+    if (-not $LOLBASData -or $LOLBASData.Count -eq 0) {
+        Write-Error "No LOLBAS data loaded. Cannot proceed."
         return
     }
 
     # Check binaries
-    $Results = Check-Binaries -YamlData $YamlData -Verbose:$Verbose
+    $Results = Check-Binaries -YamlData $LOLBASData -Verbose:$Verbose
     
     if ($Results.Count -eq 0) {
         Write-Warning "No results generated. Check your YAML files and paths."

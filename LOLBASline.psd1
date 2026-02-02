@@ -12,7 +12,7 @@
 RootModule = 'LOLBASline.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.1.0'
+ModuleVersion = '1.2.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -54,7 +54,8 @@ CompatiblePSEditions = @('Desktop', 'Core')
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @('powershell-yaml')
+# No dependencies required! Uses JSON API instead of YAML parsing.
+# RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()
@@ -111,6 +112,14 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = @'
+Version 1.2.0 - Dependency Removal
+- REMOVED git dependency - now uses JSON API (no git clone needed!)
+- REMOVED powershell-yaml dependency - uses JSON API instead
+- Zero external dependencies required!
+- Faster execution (no repository cloning/downloading)
+- Always up-to-date data from LOLBAS JSON API
+- Backward compatible (Path parameter still accepted but uses JSON API)
+
 Version 1.1.0 - Comprehensive Improvements
 - Fixed Path parameter bug (now properly uses provided path)
 - Added null checks for Full_Path array access (prevents crashes)
