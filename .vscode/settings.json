@@ -1,0 +1,6 @@
+{
+    "powershell.codeFormatting.preset": "OTBS",
+    "powershell.scriptAnalysis.settingsPath": ".vscode\\PSScriptAnalyzerSettings.psd1",
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true
+}

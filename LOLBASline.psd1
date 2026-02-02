@@ -12,7 +12,7 @@
 RootModule = 'LOLBASline.psm1'
 
 # Version number of this module.
-ModuleVersion = '1.0.2'
+ModuleVersion = '1.1.0'
 
 # Supported PSEditions
 # CompatiblePSEditions = @()
@@ -34,6 +34,9 @@ Description = 'A PowerShell tool for checking LOLBAS binaries'
 
 # Minimum version of the PowerShell engine required by this module
 PowerShellVersion = '5.1'
+
+# Compatible PowerShell editions
+CompatiblePSEditions = @('Desktop', 'Core')
 
 # Name of the PowerShell host required by this module
 # PowerShellHostName = ''
@@ -107,7 +110,17 @@ PrivateData = @{
         # IconUri = ''
 
         # ReleaseNotes of this module
-        ReleaseNotes = 'Added new features and fixed bugs.'
+        ReleaseNotes = @'
+Version 1.1.0 - Comprehensive Improvements
+- Fixed Path parameter bug (now properly uses provided path)
+- Added null checks for Full_Path array access (prevents crashes)
+- Improved error handling for YAML parsing failures
+- Enhanced PowerShell 7 compatibility with platform detection
+- Added progress indicators for verbose mode
+- Improved code quality and performance (ArrayList instead of +=)
+- Better error messages and user feedback
+- Cross-platform support improvements
+'@
         # Prerelease string of this module
         # Prerelease = ''
 
