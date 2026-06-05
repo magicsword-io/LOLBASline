@@ -40,29 +40,50 @@ function Invoke-LOLBASline {
 
     Import-Module powershell-yaml -ErrorAction Stop
 
-	function Clone-LOLBASRepo {
-		param (
-			[string]$Destination
-		)
+    function Clone-LOLBASRepo {
+        param (
+            [string]$Destination
+        )
 
-		# Check if git is available
-		$gitInstalled = Get-Command "git" -ErrorAction SilentlyContinue
-		if (-not $gitInstalled) {
-			Write-Warning "Git is not installed. Please install Git to use this module."
-			Write-Host "You can download Git from https://git-scm.com/downloads"
-			# Exit the script if Git is not installed
-			return $null
-		}
+        if (-not (Test-Path $Destination)) {
+            $gitInstalled = Get-Command "git" -ErrorAction SilentlyContinue
+            if ($gitInstalled) {
+                Write-Output "Git is installed. Proceeding with cloning the repository."
+                $RepoURL = "https://github.com/LOLBAS-Project/LOLBAS.git"
+                Write-Output "Cloning LOLBAS project to $Destination..."
+                git clone --depth 1 $RepoURL $Destination
+            }
+            else {
+                Write-Warning "Git is not installed. Proceeding to download the repository as a ZIP file."
+                $zipFile = 'LOLBAS.zip'
+                try {
+                    Invoke-WebRequest -Uri 'https://github.com/LOLBAS-Project/LOLBAS/archive/refs/heads/master.zip' -OutFile $zipFile -ErrorAction Stop
+                    Expand-Archive -Path $zipFile -DestinationPath . -ErrorAction Stop
+                    Move-Item -Path 'LOLBAS-master' -Destination $Destination -ErrorAction Stop
+                }
+                catch {
+                    Write-Error "Failed to download and extract LOLBAS repository. Error: $_"
+                }
+                finally {
+                    if (Test-Path $zipFile) {
+                        Remove-Item $zipFile -Force
+                    }
+                }
+            }
+        }
+        else {
+            Write-Output "$Destination already exists. Using existing repository."
+        }
 
-		if (-not (Test-Path $Destination)) {
-			$RepoURL = "https://github.com/LOLBAS-Project/LOLBAS.git"
-			Write-Host "Cloning LOLBAS project to $Destination..."
-			git clone $RepoURL $Destination
-		} else {
-			Write-Host "$Destination already exists. Using existing repository."
-		}
-		return "$Destination/yml/OSBinaries"
-	}
+        $finalPath = "$Destination/yml/OSBinaries"
+        if (Test-Path $finalPath) {
+            return $finalPath
+        }
+        else {
+            Write-Error "Failed to obtain LOLBAS repository files."
+            return $null
+        }
+    }
 
     function Load-YAMLFiles {
         param (
@@ -89,32 +110,41 @@ function Invoke-LOLBASline {
 
         $Results = @()
 
+        $i = 0
+        $total = $YamlData.Count
+
         foreach ($Data in $YamlData) {
+            $i++
+            $percent = [math]::Round(($i / $total) * 100)
+            Write-Progress -Activity "Checking Binaries" -Status "Processing $($Data.Name) ($i of $total)" -PercentComplete $percent
+
             if ($Data.Commands) {
                 foreach ($CommandInfo in $Data.Commands) {
                     $ExecutablePath = $Data.Full_Path[0].Path
                     try {
-                        $Presence = if (Test-Path $ExecutablePath) { "Yes" } else { "No" }
-                    } catch {
-                        $Presence = "Error in Path"
+                        $Presence = Test-Path $ExecutablePath -ErrorAction Stop
+                    }
+                    catch {
+                        $Presence = $null
                         if ($Verbose) {
                             Write-Host "Error testing path '$ExecutablePath': $_" -ForegroundColor Red
                         }
                     }
                     $ExecutableCommand = $CommandInfo.Command
                     $executionResult = "Not Executed"
-                    
-                    if ($Presence -eq "Yes") {
+
+                    if ($Presence) {
+                        Write-Verbose "Attempting to execute command: $ExecutableCommand"
                         try {
                             $process = Start-Process -FilePath "cmd.exe" -ArgumentList "/c $ExecutableCommand" -PassThru -WindowStyle Hidden
-                            Start-Sleep -Seconds 2 # Give the command a moment to execute; adjust as needed
-                            if ($process.HasExited -eq $false) {
+                            if ($process.WaitForExit(2000)) {
+                                $executionResult = if ($process.ExitCode -eq 0) { "Executed" } else { "Failed" }
+                            } else {
                                 $process.Kill()
                                 $executionResult = "Executed"
-                            } else {
-                                $executionResult = "Failed"
                             }
-                        } catch {
+                        }
+                        catch {
                             $executionResult = "Error"
                         }
                     }
@@ -135,26 +165,27 @@ function Invoke-LOLBASline {
                     if ($Verbose) {
                         $color = switch ($executionResult) {
                             "Executed" { "Green" }
-                            "Failed"   { "Red" }
-                            Default    { "Yellow" }
+                            "Failed" { "Red" }
+                            Default { "Yellow" }
                         }
                         Write-Host "$($Data.Name): Presence = $($Presence), Execution result = $($executionResult)" -ForegroundColor $color
                     }
                 }
             }
         }
+        Write-Progress -Activity "Checking Binaries" -Completed
 
         return $Results
     }
 
-	$Path = Clone-LOLBASRepo -Destination "lolbas_repo"
-	if (-not $Path) {
-		Write-Host "Unable to continue without Git. Exiting script."
-		return
-	}
+    $Path = Clone-LOLBASRepo -Destination "lolbas_repo"
+    if (-not $Path) {
+        Write-Warning "Failed to obtain LOLBAS repository files. Unable to continue."
+        return
+    }
 
     $YamlData = Load-YAMLFiles -DirectoryPath $Path
     $Results = Check-Binaries -YamlData $YamlData -Verbose:$Verbose
     $Results | Export-Csv -Path $Output -NoTypeInformation
-    Write-Host "Results written to $Output"
+    Write-Output "Results written to $Output"
 }

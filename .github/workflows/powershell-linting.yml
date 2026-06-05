@@ -1,0 +1,36 @@
+name: Powershell linting
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:  
+    lint-powershell:
+        permissions:
+          security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+        name: PSScriptAnalyzer
+        runs-on: ubuntu-latest
+        steps:
+          - name: Checkout
+            uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    
+          - name: Run PSScriptAnalyzer
+            uses: microsoft/psscriptanalyzer-action@6b2948b1944407914a58661c49941824d149734f
+            with:
+              # Check https://github.com/microsoft/action-psscriptanalyzer for more info about the options.
+              # The below set up runs PSScriptAnalyzer to your entire repository and runs some basic security rules.
+              path: .\
+              recurse: true
+              output: results.sarif
+    
+          # Upload the SARIF file generated in the previous step
+          - name: Upload SARIF results file
+            uses: github/codeql-action/upload-sarif@cdefb33c0f6224e58673d9004f47f7cb3e328b89 # v4.31.10
+            with:
+              sarif_file: results.sarif
+    
